@@ -15,6 +15,7 @@ from pathlib import Path
 
 
 def load_collection(path):
+    """从磁盘加载 Postman Collection JSON 文件。"""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(path)
@@ -22,20 +23,27 @@ def load_collection(path):
 
 
 def is_v2(collection):
+    """根据 info.schema 等判断是否为 Postman Collection 2.x 格式。"""
     info = collection.get("info") or {}
     schema = (info.get("schema") or "").lower()
     return "2." in schema or "v2" in schema or "postman" in str(collection.get("info", {}))
 
 
 def walk_requests(item, base_path="", results=None):
+    """
+    递归遍历 Collection 的 item 树：若当前节点带 request 则视为一个请求并加入 results，
+    再对子 item 递归，子节点会带上当前文件夹路径。
+    """
     if results is None:
         results = []
     name = item.get("name", "")
+    # 叶子节点：包含 request 的为实际请求
     if "request" in item:
         req = item["request"]
         if isinstance(req, dict):
             method = (req.get("method") or "GET").upper()
             url = req.get("url")
+            # url 可能是字符串或对象（含 path/raw 等）
             if isinstance(url, str):
                 path = url
             elif isinstance(url, dict):
@@ -53,6 +61,7 @@ def walk_requests(item, base_path="", results=None):
                 "name": name,
                 "folder": base_path,
             })
+    # 递归子项（文件夹或嵌套请求）
     for child in item.get("item") or []:
         if isinstance(child, dict):
             folder = "{}/{}".format(base_path, name).strip("/") if name else base_path
@@ -61,6 +70,7 @@ def walk_requests(item, base_path="", results=None):
 
 
 def collect_endpoints(collection):
+    """从 Collection 根级的 item 开始递归，收集所有请求为端点列表。"""
     results = []
     for item in collection.get("item") or []:
         if isinstance(item, dict):
@@ -69,6 +79,7 @@ def collect_endpoints(collection):
 
 
 def format_inventory(collection, endpoints, base_url=""):
+    """将端点列表格式化为「方法 路径 - 名称」的文本清单，带 Collection 名称和 Base URL。"""
     info = collection.get("info") or {}
     name = info.get("name") or "Postman Collection"
     lines = ["# {}".format(name), ""]
@@ -85,6 +96,7 @@ def format_inventory(collection, endpoints, base_url=""):
 
 
 def main():
+    """命令行入口：解析参数，加载 Collection，提取端点并输出到 stdout 或文件。"""
     parser = argparse.ArgumentParser(description="从 Postman Collection 提取端点清单")
     parser.add_argument("collection_path", help="Postman 导出的 collection JSON 路径")
     parser.add_argument("--output", "-o", help="写入文件（默认 stdout）")

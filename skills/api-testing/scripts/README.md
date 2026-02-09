@@ -1,6 +1,6 @@
 # 脚本说明
 
-本目录为 **api-test-generator** skill 的辅助脚本，用于从 API 文档中提取端点清单，供 SKILL 工作流「分析 API 路由」步骤使用。
+本目录为 **api-testing** skill 的辅助脚本，用于从 API 文档中提取端点清单，供 SKILL 工作流「从 API 文档得到端点清单」步骤使用。
 
 ## 依赖
 
